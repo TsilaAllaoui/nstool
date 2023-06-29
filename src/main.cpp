@@ -87,7 +87,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			pfsProcess.process();
 
 			// Output folder
-			outputFolder = toLowerCaseHex(cnmtProcess.titleId);
+			outputFolder = "games\\" + toLowerCaseHex(cnmtProcess.titleId);
 
 			// Extract icons from nacp nca file
 			nstool::NcaProcess controlNcaProcess;
@@ -110,7 +110,7 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			controlNacpProcess.setVerifyMode(set.opt.verify);
 			controlNacpProcess.importNacp();
 			auto output = controlNacpProcess.getTitleInfo();
-			std::ofstream file(outputFolder + "\\title_info.json");
+			std::ofstream file(outputFolder + "\\title_info.txt");
 			file << output.str();
 			file.close();
 
