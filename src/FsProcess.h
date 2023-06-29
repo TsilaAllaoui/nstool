@@ -13,6 +13,7 @@ public:
 	FsProcess();
 
 	void process();
+	void extractIcons(const tc::io::Path& v_path, const tc::io::Path& l_path, bool extract_fs, bool print_fs);
 
 	void setInputFileSystem(const std::shared_ptr<tc::io::IFileSystem>& input_fs);
 	void setFsFormatName(const std::string& fs_format_name);

@@ -21,6 +21,57 @@ nstool::PfsProcess::PfsProcess() :
 	mFsProcess.setFsFormatName("PartitionFs");
 }
 
+std::string nstool::PfsProcess::getCnmtNcaFileName()
+{
+	if (mFile == nullptr)
+	{
+		throw tc::Exception(mModuleName, "No file reader set.");
+	}
+	if (mFile->canRead() == false || mFile->canSeek() == false)
+	{
+		throw tc::NotSupportedException(mModuleName, "Input stream requires read/seek permissions.");
+	}
+
+	tc::ByteData scratch;
+
+	// read base header to determine complete header size
+	if (mFile->length() < tc::io::IOUtil::castSizeToInt64(sizeof(pie::hac::sPfsHeader)))
+	{
+		throw tc::Exception(mModuleName, "Corrupt PartitionFs: File too small");
+	}
+
+	scratch = tc::ByteData(sizeof(pie::hac::sPfsHeader));
+	mFile->seek(0, tc::io::SeekOrigin::Begin);
+	mFile->read(scratch.data(), scratch.size());
+	if (validateHeaderMagic(((pie::hac::sPfsHeader*)scratch.data())) == false)
+	{
+		throw tc::Exception(mModuleName, "Corrupt PartitionFs: Header had incorrect struct magic.");
+	}
+
+	// read complete size header
+	size_t pfsHeaderSize = determineHeaderSize(((pie::hac::sPfsHeader*)scratch.data()));
+	if (mFile->length() < tc::io::IOUtil::castSizeToInt64(pfsHeaderSize))
+	{
+		throw tc::Exception(mModuleName, "Corrupt PartitionFs: File too small");
+	}
+
+	scratch = tc::ByteData(pfsHeaderSize);
+	mFile->seek(0, tc::io::SeekOrigin::Begin);
+	mFile->read(scratch.data(), scratch.size());
+
+	// process PFS
+	mPfs.fromBytes(scratch.data(), scratch.size());
+	for (auto& file : mPfs.getFileList())
+	{
+		if (file.name.find("cnmt.nca") != file.name.npos)
+		{
+			fmt::print("CMNT File found: {:s}", file.name);
+			return file.name;
+		}
+	}
+	return "";
+}
+
 void nstool::PfsProcess::process()
 {
 	if (mFile == nullptr)
@@ -61,19 +112,19 @@ void nstool::PfsProcess::process()
 
 	// process PFS
 	mPfs.fromBytes(scratch.data(), scratch.size());
-	std::cout << "Files in FS: \n" << std::endl;
-	for (auto& file : mPfs.getFileList())
-		std::cout << file.name << std::endl;
+	//std::cout << "Files in FS: \n" << std::endl;
+	//for (auto& file : mPfs.getFileList())
+	//	std::cout << file.name << std::endl;
 
 	// create virtual filesystem
 	mFileSystem = std::make_shared<tc::io::VirtualFileSystem>(tc::io::VirtualFileSystem(pie::hac::PartitionFsSnapshotGenerator(mFile, mVerify ? pie::hac::PartitionFsSnapshotGenerator::ValidationMode_Warn : pie::hac::PartitionFsSnapshotGenerator::ValidationMode_None)));
 	mFsProcess.setInputFileSystem(mFileSystem);
 
 	// set properties for FsProcess
-	mFsProcess.setFsProperties({
+	/*mFsProcess.setFsProperties({
 		fmt::format("Type:        {:s}", pie::hac::PartitionFsUtil::getFsTypeAsString(mPfs.getFsType())), 
 		fmt::format("FileNum:     {:d}", mPfs.getFileList().size())
-	});
+	});*/
 	
 	mFsProcess.process();
 

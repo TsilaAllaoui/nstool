@@ -11,12 +11,17 @@ public:
 	CnmtProcess();
 
 	void process();
+	void getNacpFileName();
 
 	void setInputFile(const std::shared_ptr<tc::io::IStream>& file);
 	void setCliOutputMode(CliOutputMode type);
 	void setVerifyMode(bool verify);
 
 	const pie::hac::ContentMeta& getContentMeta() const;
+
+	uint64_t titleId;
+	std::string controlNcapFileName;
+
 private:
 	std::string mModuleName;
 

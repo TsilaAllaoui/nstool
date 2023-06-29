@@ -64,6 +64,18 @@ void nstool::NacpProcess::importNacp()
 	mNacp.fromBytes(scratch.data(), scratch.size());
 }
 
+std::stringstream nstool::NacpProcess::getTitleInfo()
+{
+	std::stringstream fileContent;
+
+	// Title
+	fileContent << "tile=" <<  (*mNacp.getTitle().begin()).name;
+
+	return fileContent;
+
+	// Add other info later if needed
+}
+
 void nstool::NacpProcess::displayNacp()
 {
 	fmt::print("[ApplicationControlProperty]\n");

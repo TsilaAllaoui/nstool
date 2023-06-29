@@ -15,6 +15,7 @@ public:
 	NcaProcess();
 
 	void process();
+	void processCnmt();
 
 	// generic
 	void setInputFile(const std::shared_ptr<tc::io::IStream>& file);
@@ -31,6 +32,9 @@ public:
 
 	// post process() get FS out
 	const std::shared_ptr<tc::io::IFileSystem>& getFileSystem() const;
+
+	// nca data
+	pie::hac::ContentArchiveHeader mHdr;
 private:
 	const std::string kNpdmExefsPath = "/main.npdm";
 
@@ -50,7 +54,7 @@ private:
 	// nca data
 	pie::hac::sContentArchiveHeaderBlock mHdrBlock;
 	pie::hac::detail::sha256_hash_t mHdrHash;
-	pie::hac::ContentArchiveHeader mHdr;
+	
 
 	// crypto
 	struct sKeys

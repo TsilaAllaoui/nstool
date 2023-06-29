@@ -2,6 +2,7 @@
 #include "types.h"
 
 #include <pietendo/hac/ApplicationControlProperty.h>
+#include <sstream>
 
 namespace nstool {
 
@@ -11,6 +12,8 @@ public:
 	NacpProcess();
 
 	void process();
+	std::stringstream getTitleInfo();
+	void importNacp();
 
 	void setInputFile(const std::shared_ptr<tc::io::IStream>& file);
 	void setCliOutputMode(CliOutputMode type);
@@ -26,9 +29,8 @@ private:
 	bool mVerify;
 
 	pie::hac::ApplicationControlProperty mNacp;
-
-	void importNacp();
 	void displayNacp();
+
 };
 
 }

@@ -12,6 +12,7 @@ public:
 	PfsProcess();
 
 	void process();
+	std::string getCnmtNcaFileName();
 
 	// generic
 	void setInputFile(const std::shared_ptr<tc::io::IStream>& file);

@@ -10,6 +10,8 @@
 #include <pietendo/hac/PartitionFsSnapshotGenerator.h>
 #include <pietendo/hac/RomFsSnapshotGenerator.h>
 #include <pietendo/hac/CombinedFsSnapshotGenerator.h>
+#include <sstream>
+#include <iomanip>
 
 nstool::NcaProcess::NcaProcess() :
 	mModuleName("nstool::NcaProcess"),
@@ -19,6 +21,78 @@ nstool::NcaProcess::NcaProcess() :
 	mFileSystem(),
 	mFsProcess()
 {
+}
+
+void nstool::NcaProcess::processCnmt()
+{
+	// import header
+	importHeader();
+
+	// determine keys
+	generateNcaBodyEncryptionKeys();
+
+	// import/generate fs header data
+	generatePartitionConfiguration();
+
+	// validate signatures
+	if (mVerify)
+		validateNcaSignatures();
+
+	// display header
+	//if (mCliOutputMode.show_basic_info)
+	//	displayHeader();
+
+	// process partition
+	std::vector<pie::hac::CombinedFsSnapshotGenerator::MountPointInfo> mount_points;
+	for (size_t i = 0; i < mHdr.getPartitionEntryList().size(); i++)
+	{
+		uint32_t index = mHdr.getPartitionEntryList()[i].header_index;
+		struct sPartitionInfo& partition = mPartitions[index];
+
+		// if the reader is null, skip
+		if (partition.fs_reader == nullptr)
+		{
+			fmt::print("[WARNING] NCA Partition {:d} not readable.", index);
+			if (partition.fail_reason.empty() == false)
+			{
+				fmt::print(" ({:s})", partition.fail_reason);
+			}
+			fmt::print("\n");
+			continue;
+		}
+
+		std::string mount_point_name;
+		{
+			mount_point_name = fmt::format("{:d}", index);
+		}
+
+		mount_points.push_back({ mount_point_name, partition.fs_snapshot });
+	}
+
+	tc::io::VirtualFileSystem::FileSystemSnapshot fs_snapshot = pie::hac::CombinedFsSnapshotGenerator(mount_points);
+
+	std::shared_ptr<tc::io::IFileSystem> nca_fs = std::make_shared<tc::io::VirtualFileSystem>(tc::io::VirtualFileSystem(fs_snapshot));
+
+	mFsProcess.setInputFileSystem(nca_fs);
+	mFsProcess.setFsFormatName("ContentArchive");
+	mFsProcess.setFsRootLabel(getContentTypeForMountStr(mHdr.getContentType()));
+
+	// Get title ID as hex
+	auto toLowerCaseHex = [](uint64_t number) {
+		std::stringstream stream;
+		stream << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << number;
+		std::string result = stream.str();
+		for (char& c : result) {
+			if (std::isalpha(c)) {
+				c = std::tolower(c);
+			}
+		}
+		return result;
+	};
+
+	nstool::ExtractJob extractJob = { tc::io::Path("0\\Application_0" + toLowerCaseHex(mHdr.getProgramId()) + ".cnmt") , tc::io::Path(".") };
+	mFsProcess.setExtractJobs({ extractJob });
+	mFsProcess.process();
 }
 
 void nstool::NcaProcess::process()

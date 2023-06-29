@@ -18,6 +18,55 @@ void nstool::CnmtProcess::process()
 		displayCnmt();
 }
 
+void nstool::CnmtProcess::getNacpFileName()
+{
+	if (mFile == nullptr)
+	{
+		throw tc::Exception(mModuleName, "No file reader set.");
+	}
+	if (mFile->canRead() == false || mFile->canSeek() == false)
+	{
+		throw tc::NotSupportedException(mModuleName, "Input stream requires read/seek permissions.");
+	}
+
+	// check if file_size is greater than 20MB, don't import.
+	size_t cnmt_file_size = tc::io::IOUtil::castInt64ToSize(mFile->length());
+	if (cnmt_file_size > (0x100000 * 20))
+	{
+		throw tc::Exception(mModuleName, "File too large.");
+	}
+
+	// read cnmt
+	tc::ByteData scratch = tc::ByteData(cnmt_file_size);
+	mFile->seek(0, tc::io::SeekOrigin::Begin);
+	mFile->read(scratch.data(), scratch.size());
+
+	// parse cnmt
+	mCnmt.fromBytes(scratch.data(), scratch.size());
+
+	const pie::hac::sContentMetaHeader* cnmt_hdr = (const pie::hac::sContentMetaHeader*)mCnmt.getBytes().data();
+	fmt::print("  TitleId:               0x{:016x}\n", mCnmt.getTitleId());
+	titleId = mCnmt.getTitleId();
+	if (mCnmt.getContentInfo().size() > 0)
+	{
+		for (size_t i = 0; i < mCnmt.getContentInfo().size(); i++)
+		{
+			auto info = mCnmt.getContentInfo().at(i);
+			auto type = pie::hac::ContentMetaUtil::getContentTypeAsString(info.getContentType());
+			if (type == "Control")
+			{
+				controlNcapFileName = tc::cli::FormatUtil::formatBytesAsString(info.getContentId().data(), info.getContentId().size(), false, "");
+				fmt::print("    {:d}\n", i);
+				fmt::print("      Type:         {:s} ({:d})\n", pie::hac::ContentMetaUtil::getContentTypeAsString(info.getContentType()), (uint32_t)info.getContentType());
+				fmt::print("      Id:           {:s}\n", tc::cli::FormatUtil::formatBytesAsString(info.getContentId().data(), info.getContentId().size(), false, ""));
+				fmt::print("      Size:         0x{:x}\n", info.getContentSize());
+				fmt::print("      Hash:         {:s}\n", tc::cli::FormatUtil::formatBytesAsString(info.getContentHash().data(), info.getContentHash().size(), false, ""));
+				
+			}
+		}
+	}
+}
+
 void nstool::CnmtProcess::setInputFile(const std::shared_ptr<tc::io::IStream>& file)
 {
 	mFile = file;
