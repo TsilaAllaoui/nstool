@@ -69,7 +69,7 @@ std::stringstream nstool::NacpProcess::getTitleInfo()
 	std::stringstream fileContent;
 
 	// Title
-	fileContent << "tile=" <<  (*mNacp.getTitle().begin()).name;
+	fileContent << "title=" << (*mNacp.getTitle().begin()).name << std::endl;
 
 	return fileContent;
 

@@ -110,8 +110,10 @@ int umain(const std::vector<std::string>& args, const std::vector<std::string>& 
 			controlNacpProcess.setVerifyMode(set.opt.verify);
 			controlNacpProcess.importNacp();
 			auto output = controlNacpProcess.getTitleInfo();
+			output << set.infile.path.get().to_string();
 			std::ofstream file(outputFolder + "\\title_info.txt");
 			file << output.str();
+			file << "path=" << set.infile.path.get().to_string();
 			file.close();
 
 			// Renaming all dat to png
